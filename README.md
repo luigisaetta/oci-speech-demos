@@ -23,7 +23,7 @@ OCI Speech support not only wav format, but also: mp3, ogg, oga, webm, ac3, aac,
 
 ## Demos:
 * [demo1](./demo1_main.py): takes a list of wav files from a local directory, transcribe the audio and output the result to the screen
-* [demo2](./demo2.py): built with Streamlit, enables you to upload a file to the UI and get bacj the audio trascription
+* [demo2](./demo2.py): built with Streamlit, enables you to upload a file to the UI and get back the audio trascription
 
 ## Sampling rate
 For all languages 16 Khz is supported. For some languages (english, spanish...) it is also supported 8 Khz.
