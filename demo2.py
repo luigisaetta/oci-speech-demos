@@ -1,9 +1,8 @@
 #
 # UI for OCI Speech
-# up,oad a wav file using Stremlit and get transcription
+# upload a wav file using Streamlit and get transcription
 #
 import streamlit as st
-import argparse
 import os
 from os import path
 import time
@@ -32,7 +31,6 @@ from config import (
     NAMESPACE,
     EXT,
     JSON_EXT,
-    WAV_DIR,
     JSON_DIR,
     DEBUG,
     AUDIO_FORMAT_SUPPORTED,
@@ -45,7 +43,7 @@ OUTPUT_BUCKET = "speech_output"
 # list of supported audio files
 audio_supported = AUDIO_FORMAT_SUPPORTED
 LANG_SUPPORTED = ["it", "en"]
-dict_lang_codes = {"it": "it-IT", "en": "en-EN"}
+dict_lang_codes = {"it": "it-IT", "en": "en-GB"}
 
 # end config
 
@@ -177,6 +175,10 @@ def get_transcriptions():
 
     return txt
 
+
+#
+# Main
+#
 
 # Set app wide config
 st.set_page_config(
