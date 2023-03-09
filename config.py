@@ -1,7 +1,7 @@
 #
 # All static configuration here
 ##
-
+DEBUG = True
 SLEEP_TIME = 10
 
 # OCI compartment you're working in
