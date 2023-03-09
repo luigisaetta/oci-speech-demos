@@ -13,6 +13,7 @@ In this repository you will find examples and demo showing how to use Python SDK
 * US English
 * Spanish
 * Italian
+* French
 * German
 * Hindi
 * Portuguese
