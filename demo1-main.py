@@ -1,24 +1,55 @@
 #
 # OCI Speech Demo1
 #
+import os
 from os import path
+import time
+import sys
+
 import oci
 from oci.config import from_file
 from ocifs import OCIFileSystem
+
+from oci.ai_speech.models import (
+    TranscriptionModelDetails,
+    ObjectLocation,
+    ObjectListInlineInputLocation,
+    OutputLocation,
+    ChangeTranscriptionJobCompartmentDetails,
+    UpdateTranscriptionJobDetails,
+    CreateTranscriptionJobDetails,
+)
 from tqdm import tqdm
 import glob
+import json
 
-# 
+#
+# global config
+#
+SLEEP_TIME = 10
 DEBUG = True
 EXT = "wav"
 JSON_EXT = "json"
 
+# local directory for input wav files
 WAV_DIR = "wav"
+# local directory for JSON output from OCI Speech
 DIR_JSON = "json"
 
 NAMESPACE = "frqap2zhtzbe"
 INPUT_BUCKET = "speech_input"
 OUTPUT_BUCKET = "speech_output"
+
+LANGUAGE_CODE = "it-IT"
+
+# set JOB PREFIX
+JOB_PREFIX = "test1"
+DISPLAY_NAME = "test1"
+# your compartment OCID
+COMPARTMENT_ID = "ocid1.compartment.oc1..aaaaaaaag2cpni5qj6li5ny6ehuahhepbpveopobooayqfeudqygdtfe6h3a"
+
+# end global config
+
 
 def print_debug(txt=None):
     if DEBUG:
@@ -59,12 +90,15 @@ list_wav = glob.glob(path.join(WAV_DIR, f"*.{EXT}"))
 print()
 print("Copy files to transcribe..")
 
+FILE_NAMES = []
 for f_name in tqdm(list_wav):
     print(f"Copying {f_name}...")
 
     only_name = f_name.split("/")[-1]
 
     fs.put(f_name, f"{INPUT_BUCKET}@{NAMESPACE}/{only_name}")
+    FILE_NAMES.append(only_name)
+
     n_copied += 1
 
 print()
@@ -75,20 +109,109 @@ print()
 # Launch the job
 #
 
+# create the client
+ai_client = oci.ai_speech.AIServiceSpeechClient(oci.config.from_file())
+
+# prepare the request
+MODE_DETAILS = TranscriptionModelDetails(domain="GENERIC", language_code=LANGUAGE_CODE)
+OBJECT_LOCATION = ObjectLocation(
+    namespace_name=NAMESPACE, bucket_name=INPUT_BUCKET, object_names=FILE_NAMES
+)
+INPUT_LOCATION = ObjectListInlineInputLocation(
+    location_type="OBJECT_LIST_INLINE_INPUT_LOCATION",
+    object_locations=[OBJECT_LOCATION],
+)
+
+OUTPUT_LOCATION = OutputLocation(
+    namespace_name=NAMESPACE, bucket_name=OUTPUT_BUCKET, prefix=JOB_PREFIX
+)
+
+COMPARTMENT_DETAILS = ChangeTranscriptionJobCompartmentDetails(
+    compartment_id=COMPARTMENT_ID
+)
+UPDATE_JOB_DETAILS = UpdateTranscriptionJobDetails(
+    display_name=DISPLAY_NAME, description=""
+)
+
+transcription_job_details = CreateTranscriptionJobDetails(
+    display_name=DISPLAY_NAME,
+    compartment_id=COMPARTMENT_ID,
+    description="",
+    model_details=MODE_DETAILS,
+    input_location=INPUT_LOCATION,
+    output_location=OUTPUT_LOCATION,
+)
+transcription_job = None
+print("*** CREATING TRANSCRIPTION JOB ***")
+try:
+    transcription_job = ai_client.create_transcription_job(
+        create_transcription_job_details=transcription_job_details
+    )
+
+    JOB_ID = transcription_job.data.id
+
+    print(f"JOB ID is: {transcription_job.data.id}")
+except Exception as e:
+    print(e)
+
+# wait while JOB is in progress
+current_job = ai_client.get_transcription_job(JOB_ID)
+status = current_job.data.lifecycle_state
+
+while status in ["ACCEPTED", "IN_PROGRESS"]:
+    print("Waiting for job to complete...")
+    time.sleep(SLEEP_TIME)
+
+    current_job = ai_client.get_transcription_job(JOB_ID)
+    status = current_job.data.lifecycle_state
+
+print()
+print(f"JOB status is: {status}")
+print()
+
 #
 # Download the output
 #
-JOB_ID = "job-amaaaaaangencdyawhpf6ujxiuvdttseffgsvieoe6nl5ywiqyypwjofx37a"
+# clean local dir
+files = glob.glob(path.join(DIR_JSON, f"*.{JSON_EXT}"))
 
-# get the list all files in OUTPUT_BUCKET
-list_json = fs.glob(f"{OUTPUT_BUCKET}@{NAMESPACE}/{JOB_ID}/*.{JSON_EXT}")
+for f in files:
+    os.remove(f)
+
+# get from JOB
+OUTPUT_PREFIX = transcription_job.data.output_location.prefix
+
+# get the list all files in OUTPUT_BUCKET/OUTPUT_PREFIX
+list_json = fs.glob(f"{OUTPUT_BUCKET}@{NAMESPACE}/{OUTPUT_PREFIX}/*.{JSON_EXT}")
 
 # copy all the files in DIR_JSON
 print()
-print(f"Copy JSON files to {DIR_JSON} local directory...")
+print(f"Copy JSON result files to {DIR_JSON} local directory...")
 print()
 
 for f_name in tqdm(list_json):
     only_name = f_name.split("/")[-1]
     fs.get(f_name, path.join(DIR_JSON, only_name))
 
+
+# visualizing all the transcriptions
+# get the file list
+print()
+print("*** Visualizing transcriptions ***")
+print()
+list_local_json = sorted(glob.glob(path.join(DIR_JSON, f"*.{JSON_EXT}")))
+
+for f_name in list_local_json:
+    only_name = f_name.split("/")[-1]
+
+    # remove prefix and .json
+    PREFIX = NAMESPACE + "_" + INPUT_BUCKET + "_"
+
+    only_name = only_name.replace(PREFIX, "")
+    only_name = only_name.replace(".json", "")
+
+    print(only_name)
+    with open(f_name) as f:
+        d = json.load(f)
+        print(d["transcriptions"][0]["transcription"])
+        print()
