@@ -32,7 +32,7 @@ If you want to launch the demo from your laptop (better: Mac) you need to have c
 
 For more details on the needed configuration, see the Wiki.
 
-## Features
+## Demo Features
 In [demo1](./demo1_main.py) you can see: 
 * how to launch a transcription job
 * how to wait for job completion
