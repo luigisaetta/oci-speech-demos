@@ -21,3 +21,5 @@ JSON_EXT = "json"
 WAV_DIR = "wav"
 # local directory for JSON output from OCI Speech
 JSON_DIR = "json"
+
+AUDIO_FORMAT_SUPPORTED = ["wav"]
