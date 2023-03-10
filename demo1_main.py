@@ -18,16 +18,22 @@ from oci.ai_speech.models import (
     ObjectLocation,
     ObjectListInlineInputLocation,
     OutputLocation,
-    ChangeTranscriptionJobCompartmentDetails,
-    UpdateTranscriptionJobDetails,
     CreateTranscriptionJobDetails,
+)
+
+from utils import (
+    print_debug,
+    clean_directory,
+    get_ocifs,
+    copy_files_to_oss,
+    copy_json_from_oss,
+    wait_for_job_completion,
 )
 
 #
 # global config
 #
 from config import (
-    SLEEP_TIME,
     COMPARTMENT_ID,
     NAMESPACE,
     EXT,
@@ -72,14 +78,6 @@ def parser_add_args(parser):
     return parser
 
 
-def print_debug(txt=None):
-    if DEBUG:
-        if txt is not None:
-            print(txt)
-        else:
-            print("")
-
-
 def print_args(args):
     print()
     print("*** Command line arguments ***")
@@ -90,93 +88,34 @@ def print_args(args):
     print()
 
 
-# to use ocifs for uploading/downloading files
-# from Object Storage
-def get_ocifs():
-    try:
-        rps = oci.auth.signers.get_resource_principals_signer()
+def create_transcription_job_details():
+    # prepare the request
+    MODE_DETAILS = TranscriptionModelDetails(
+        domain="GENERIC", language_code=LANGUAGE_CODE
+    )
+    OBJECT_LOCATION = ObjectLocation(
+        namespace_name=NAMESPACE,
+        bucket_name=INPUT_BUCKET,
+        object_names=FILE_NAMES,
+    )
+    INPUT_LOCATION = ObjectListInlineInputLocation(
+        location_type="OBJECT_LIST_INLINE_INPUT_LOCATION",
+        object_locations=[OBJECT_LOCATION],
+    )
+    OUTPUT_LOCATION = OutputLocation(
+        namespace_name=NAMESPACE, bucket_name=OUTPUT_BUCKET, prefix=JOB_PREFIX
+    )
 
-        # if here, we can use rp
-        print_debug("Using RP for auth...")
+    transcription_job_details = CreateTranscriptionJobDetails(
+        display_name=DISPLAY_NAME,
+        compartment_id=COMPARTMENT_ID,
+        description="",
+        model_details=MODE_DETAILS,
+        input_location=INPUT_LOCATION,
+        output_location=OUTPUT_LOCATION,
+    )
 
-        fs = OCIFileSystem()
-    except:
-        print_debug("Using API Key for auth...")
-
-        default_config = oci.config.from_file()
-
-        # validate the default config file
-        oci.config.validate_config(default_config)
-
-        fs = OCIFileSystem(config="~/.oci/config", profile="DEFAULT")
-
-    return fs
-
-
-def copy_wav_to_oss(fs):
-    n_copied = 0
-
-    list_wav = glob.glob(path.join(WAV_DIR, f"*.{EXT}"))
-
-    print()
-    print("*** Copy audio files to transcribe ***")
-
-    FILE_NAMES = []
-    for f_name in tqdm(list_wav):
-        print(f"Copying {f_name}...")
-
-        only_name = f_name.split("/")[-1]
-
-        fs.put(f_name, f"{INPUT_BUCKET}@{NAMESPACE}/{only_name}")
-        FILE_NAMES.append(only_name)
-
-        n_copied += 1
-
-    print()
-    print(f"Copied {n_copied} files to bucket {INPUT_BUCKET}.")
-    print()
-
-    return FILE_NAMES
-
-
-# loop until the job status is completed
-def wait_for_job_completion(ai_client, job_id):
-    current_job = ai_client.get_transcription_job(job_id)
-    status = current_job.data.lifecycle_state
-
-    i = 1
-    while status in ["ACCEPTED", "IN_PROGRESS"]:
-        print(f"{i} Waiting for job to complete...")
-        time.sleep(SLEEP_TIME)
-
-        current_job = ai_client.get_transcription_job(job_id)
-        status = current_job.data.lifecycle_state
-        i += 1
-
-    # final status
-    print()
-    print(f"JOB status is: {status}")
-    print()
-
-
-def clean_json_local_dir():
-    files = glob.glob(path.join(JSON_DIR, f"*.{JSON_EXT}"))
-
-    for f in files:
-        os.remove(f)
-
-
-def copy_json_from_oss(fs, output_prefix):
-    # get the list all files in OUTPUT_BUCKET/OUTPUT_PREFIX
-    list_json = fs.glob(f"{OUTPUT_BUCKET}@{NAMESPACE}/{output_prefix}/*.{JSON_EXT}")
-
-    # copy all the files in JSON_DIR
-    print(f"Copy JSON result files to: {JSON_DIR} local directory...")
-    print()
-
-    for f_name in tqdm(list_json):
-        only_name = f_name.split("/")[-1]
-        fs.get(f_name, path.join(JSON_DIR, only_name))
+    return transcription_job_details
 
 
 def visualize_transcriptions():
@@ -223,11 +162,9 @@ print()
 #
 
 # This code try to get an instance of OCIFileSystem
-# first try using Resource Principal, otherwise use api keys
-#
 fs = get_ocifs()
 
-FILE_NAMES = copy_wav_to_oss(fs)
+FILE_NAMES = copy_files_to_oss(fs, WAV_DIR, EXT, INPUT_BUCKET)
 
 #
 # Launch the job
@@ -237,32 +174,7 @@ FILE_NAMES = copy_wav_to_oss(fs)
 ai_client = oci.ai_speech.AIServiceSpeechClient(oci.config.from_file())
 
 # prepare the request
-MODE_DETAILS = TranscriptionModelDetails(domain="GENERIC", language_code=LANGUAGE_CODE)
-OBJECT_LOCATION = ObjectLocation(
-    namespace_name=NAMESPACE, bucket_name=INPUT_BUCKET, object_names=FILE_NAMES
-)
-INPUT_LOCATION = ObjectListInlineInputLocation(
-    location_type="OBJECT_LIST_INLINE_INPUT_LOCATION",
-    object_locations=[OBJECT_LOCATION],
-)
-OUTPUT_LOCATION = OutputLocation(
-    namespace_name=NAMESPACE, bucket_name=OUTPUT_BUCKET, prefix=JOB_PREFIX
-)
-COMPARTMENT_DETAILS = ChangeTranscriptionJobCompartmentDetails(
-    compartment_id=COMPARTMENT_ID
-)
-UPDATE_JOB_DETAILS = UpdateTranscriptionJobDetails(
-    display_name=DISPLAY_NAME, description=""
-)
-
-transcription_job_details = CreateTranscriptionJobDetails(
-    display_name=DISPLAY_NAME,
-    compartment_id=COMPARTMENT_ID,
-    description="",
-    model_details=MODE_DETAILS,
-    input_location=INPUT_LOCATION,
-    output_location=OUTPUT_LOCATION,
-)
+transcription_job_details = create_transcription_job_details()
 
 # create and launch the transcription job
 transcription_job = None
@@ -292,12 +204,12 @@ print()
 # Download the output from JSON files
 #
 # clean local dir
-clean_json_local_dir()
+clean_directory(JSON_DIR, JSON_EXT)
 
 # get from JOB
 OUTPUT_PREFIX = transcription_job.data.output_location.prefix
 
-copy_json_from_oss(fs, OUTPUT_PREFIX)
+copy_json_from_oss(fs, JSON_DIR, JSON_EXT, OUTPUT_PREFIX, OUTPUT_BUCKET)
 
 # visualizing all the transcriptions
 # get the file list

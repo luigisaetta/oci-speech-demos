@@ -16,8 +16,6 @@ from oci.ai_speech.models import (
     ObjectLocation,
     ObjectListInlineInputLocation,
     OutputLocation,
-    ChangeTranscriptionJobCompartmentDetails,
-    UpdateTranscriptionJobDetails,
     CreateTranscriptionJobDetails,
 )
 
@@ -26,6 +24,8 @@ from utils import (
     print_debug,
     is_rp_ok,
     get_ocifs,
+    copy_files_to_oss,
+    copy_json_from_oss,
     wait_for_job_completion,
 )
 
@@ -58,43 +58,35 @@ dict_lang_codes = {"it": "it-IT", "en": "en-GB"}
 #
 
 
-def copy_wav_to_oss(fs):
-    n_copied = 0
+# encapsulated all details here... using globals to simplify
+def create_transcription_job_details():
+    # prepare the request
+    MODE_DETAILS = TranscriptionModelDetails(
+        domain="GENERIC", language_code=LANGUAGE_CODE
+    )
+    OBJECT_LOCATION = ObjectLocation(
+        namespace_name=NAMESPACE,
+        bucket_name=INPUT_BUCKET,
+        object_names=FILE_NAMES,
+    )
+    INPUT_LOCATION = ObjectListInlineInputLocation(
+        location_type="OBJECT_LIST_INLINE_INPUT_LOCATION",
+        object_locations=[OBJECT_LOCATION],
+    )
+    OUTPUT_LOCATION = OutputLocation(
+        namespace_name=NAMESPACE, bucket_name=OUTPUT_BUCKET, prefix=JOB_PREFIX
+    )
 
-    list_wav = glob.glob(path.join(LOCAL_DIR, f"*.{EXT}"))
+    transcription_job_details = CreateTranscriptionJobDetails(
+        display_name=DISPLAY_NAME,
+        compartment_id=COMPARTMENT_ID,
+        description="",
+        model_details=MODE_DETAILS,
+        input_location=INPUT_LOCATION,
+        output_location=OUTPUT_LOCATION,
+    )
 
-    print()
-    print("*** Copy audio files to transcribe ***")
-
-    FILE_NAMES = []
-    for f_name in tqdm(list_wav):
-        print(f"Copying {f_name}...")
-
-        only_name = f_name.split("/")[-1]
-
-        fs.put(f_name, f"{INPUT_BUCKET}@{NAMESPACE}/{only_name}")
-        FILE_NAMES.append(only_name)
-
-        n_copied += 1
-
-    print()
-    print(f"Copied {n_copied} files to bucket {INPUT_BUCKET}.")
-    print()
-
-    return FILE_NAMES
-
-
-def copy_json_from_oss(fs, output_prefix):
-    # get the list all files in OUTPUT_BUCKET/OUTPUT_PREFIX
-    list_json = fs.glob(f"{OUTPUT_BUCKET}@{NAMESPACE}/{output_prefix}/*.{JSON_EXT}")
-
-    # copy all the files in JSON_DIR
-    print(f"Copy JSON result files to: {JSON_DIR} local directory...")
-    print()
-
-    for f_name in tqdm(list_json):
-        only_name = f_name.split("/")[-1]
-        fs.get(f_name, path.join(JSON_DIR, only_name))
+    return transcription_job_details
 
 
 def get_transcriptions():
@@ -165,7 +157,7 @@ if transcribe:
 
             # copy all files from LOCAL_DIR to Object Storage
             fs = get_ocifs()
-            FILE_NAMES = copy_wav_to_oss(fs)
+            FILE_NAMES = copy_files_to_oss(fs, LOCAL_DIR, EXT, INPUT_BUCKET)
 
             # transcribe JOB
             JOB_PREFIX = "test_ui"
@@ -175,36 +167,7 @@ if transcribe:
             ai_client = oci.ai_speech.AIServiceSpeechClient(oci.config.from_file())
 
             # prepare the request
-            MODE_DETAILS = TranscriptionModelDetails(
-                domain="GENERIC", language_code=LANGUAGE_CODE
-            )
-            OBJECT_LOCATION = ObjectLocation(
-                namespace_name=NAMESPACE,
-                bucket_name=INPUT_BUCKET,
-                object_names=FILE_NAMES,
-            )
-            INPUT_LOCATION = ObjectListInlineInputLocation(
-                location_type="OBJECT_LIST_INLINE_INPUT_LOCATION",
-                object_locations=[OBJECT_LOCATION],
-            )
-            OUTPUT_LOCATION = OutputLocation(
-                namespace_name=NAMESPACE, bucket_name=OUTPUT_BUCKET, prefix=JOB_PREFIX
-            )
-            COMPARTMENT_DETAILS = ChangeTranscriptionJobCompartmentDetails(
-                compartment_id=COMPARTMENT_ID
-            )
-            UPDATE_JOB_DETAILS = UpdateTranscriptionJobDetails(
-                display_name=DISPLAY_NAME, description=""
-            )
-
-            transcription_job_details = CreateTranscriptionJobDetails(
-                display_name=DISPLAY_NAME,
-                compartment_id=COMPARTMENT_ID,
-                description="",
-                model_details=MODE_DETAILS,
-                input_location=INPUT_LOCATION,
-                output_location=OUTPUT_LOCATION,
-            )
+            transcription_job_details = create_transcription_job_details()
 
             # create and launch the transcription job
             transcription_job = None
@@ -231,12 +194,15 @@ if transcribe:
             # get from JOB
             OUTPUT_PREFIX = transcription_job.data.output_location.prefix
 
-            copy_json_from_oss(fs, OUTPUT_PREFIX)
+            # copy json with transcriptions from Object Storage
+            copy_json_from_oss(fs, JSON_DIR, JSON_EXT, OUTPUT_PREFIX, OUTPUT_BUCKET)
 
             # extract only txt from json
             list_transcriptions = get_transcriptions()
 
+            # visualize transcriptions and audio widget
             transcription_col.subheader("Audio transcriptions:")
+            print()
             for txt in list_transcriptions:
                 print(txt)
                 transcription_col.markdown(txt)
@@ -249,5 +215,5 @@ if transcribe:
             t_ela = round(time.time() - t_start, 1)
 
             print()
-            print(f"Transcription end. Elapsed time: {t_ela} sec.")
+            print(f"Transcription end; Total elapsed time: {t_ela} sec.")
             print()

@@ -2,11 +2,12 @@ import os
 from os import path
 import glob
 import time
+from tqdm import tqdm
 
 import oci
 from ocifs import OCIFileSystem
 
-from config import DEBUG, SLEEP_TIME
+from config import DEBUG, SLEEP_TIME, NAMESPACE
 
 
 def print_debug(txt=None):
@@ -50,6 +51,52 @@ def get_ocifs():
         fs = OCIFileSystem(config="~/.oci/config", profile="DEFAULT")
 
     return fs
+
+
+# to copy wav files to oss
+def copy_files_to_oss(fs, local_dir, ext, dest_bucket):
+    """
+    copy all the files
+    from local_dir
+    with extension ext
+    to dest_bucket
+    """
+    n_copied = 0
+
+    list_wav = glob.glob(path.join(local_dir, f"*.{ext}"))
+
+    print()
+    print("*** Copy audio files to transcribe ***")
+
+    file_names = []
+    for f_name in tqdm(list_wav):
+        print(f"Copying {f_name}...")
+
+        only_name = f_name.split("/")[-1]
+
+        fs.put(f_name, f"{dest_bucket}@{NAMESPACE}/{only_name}")
+        file_names.append(only_name)
+
+        n_copied += 1
+
+    print()
+    print(f"Copied {n_copied} files to bucket {dest_bucket}.")
+    print()
+
+    return file_names
+
+
+def copy_json_from_oss(fs, local_json_dir, json_ext, output_prefix, output_bucket):
+    # get the list all files in OUTPUT_BUCKET/OUTPUT_PREFIX
+    list_json = fs.glob(f"{output_bucket}@{NAMESPACE}/{output_prefix}/*.{json_ext}")
+
+    # copy all the files in JSON_DIR
+    print(f"Copy JSON result files to: {local_json_dir} local directory...")
+    print()
+
+    for f_name in tqdm(list_json):
+        only_name = f_name.split("/")[-1]
+        fs.get(f_name, path.join(local_json_dir, only_name))
 
 
 # loop until the job status is completed
