@@ -1,4 +1,6 @@
 # OCI Speech Demos
+![UI demo2](./ui_printscreen.png)
+
 This repository contains all the work done for demos on **OCI Speech Service**
 
 Using OCI Speech Service you can easily get accurate transcription of speech contained in audio files.
