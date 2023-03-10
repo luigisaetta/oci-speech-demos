@@ -31,6 +31,8 @@ OCI Speech supports not only wav format, but also: mp3, ogg, oga, webm, ac3, aac
 * For all languages 16 Khz is supported. 
 * For some languages (english, spanish...) it is also supported 8 Khz.
 
+If you want to check the sampling rate of your files, you can use the utility provided [here](./check_sample_rate.py).
+
 ## Configuration
 To be able to use OCI Speech and the demos provided some configuration is needed.
 
