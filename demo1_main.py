@@ -7,7 +7,6 @@ import argparse
 import os
 from os import path
 import time
-from tqdm import tqdm
 import glob
 import json
 import oci
@@ -55,6 +54,12 @@ def parser_add_args(parser):
         type=str,
         required=True,
         help="Job name and prefix",
+    )
+    parser.add_argument(
+        "--wav_dir",
+        type=str,
+        required=False,
+        help="Input dir for wav",
     )
     parser.add_argument(
         "--input_bucket",
@@ -154,6 +159,10 @@ INPUT_BUCKET = args.input_bucket
 OUTPUT_BUCKET = args.output_bucket
 # example "it-IT"
 LANGUAGE_CODE = args.language_code
+
+if args.wav_dir is not None:
+    # get wav_dir from command line
+    WAV_DIR = args.wav_dir
 
 print("*** Starting JOB ***")
 print()
