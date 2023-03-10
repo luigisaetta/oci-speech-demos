@@ -10,7 +10,6 @@ from tqdm import tqdm
 import glob
 import json
 import oci
-from ocifs import OCIFileSystem
 
 from oci.ai_speech.models import (
     TranscriptionModelDetails,
@@ -22,11 +21,17 @@ from oci.ai_speech.models import (
     CreateTranscriptionJobDetails,
 )
 
+from utils import (
+    clean_directory,
+    print_debug,
+    is_rp_ok,
+    get_ocifs,
+    wait_for_job_completion,
+)
 
 # global config
 #
 from config import (
-    SLEEP_TIME,
     COMPARTMENT_ID,
     NAMESPACE,
     EXT,
@@ -51,42 +56,6 @@ dict_lang_codes = {"it": "it-IT", "en": "en-GB"}
 #
 # Functions
 #
-def print_debug(txt=None):
-    if DEBUG:
-        if txt is not None:
-            print(txt)
-        else:
-            print("")
-
-
-def clean_appo_local():
-    files = glob.glob(path.join(LOCAL_DIR, f"*.{EXT}"))
-
-    for f in files:
-        os.remove(f)
-
-
-# to use ocifs for uploading/downloading files
-# from Object Storage
-def get_ocifs():
-    try:
-        rps = oci.auth.signers.get_resource_principals_signer()
-
-        # if here, we can use rp
-        print_debug("Using RP for auth...")
-
-        fs = OCIFileSystem()
-    except:
-        print_debug("Using API Key for auth...")
-
-        default_config = oci.config.from_file()
-
-        # validate the default config file
-        oci.config.validate_config(default_config)
-
-        fs = OCIFileSystem(config="~/.oci/config", profile="DEFAULT")
-
-    return fs
 
 
 def copy_wav_to_oss(fs):
@@ -115,33 +84,6 @@ def copy_wav_to_oss(fs):
     return FILE_NAMES
 
 
-# loop until the job status is completed
-def wait_for_job_completion(ai_client, job_id):
-    current_job = ai_client.get_transcription_job(job_id)
-    status = current_job.data.lifecycle_state
-
-    i = 1
-    while status in ["ACCEPTED", "IN_PROGRESS"]:
-        print(f"{i} Waiting for job to complete...")
-        time.sleep(SLEEP_TIME)
-
-        current_job = ai_client.get_transcription_job(job_id)
-        status = current_job.data.lifecycle_state
-        i += 1
-
-    # final status
-    print()
-    print(f"JOB status is: {status}")
-    print()
-
-
-def clean_json_local_dir():
-    files = glob.glob(path.join(JSON_DIR, f"*.{JSON_EXT}"))
-
-    for f in files:
-        os.remove(f)
-
-
 def copy_json_from_oss(fs, output_prefix):
     # get the list all files in OUTPUT_BUCKET/OUTPUT_PREFIX
     list_json = fs.glob(f"{OUTPUT_BUCKET}@{NAMESPACE}/{output_prefix}/*.{JSON_EXT}")
@@ -158,22 +100,18 @@ def copy_json_from_oss(fs, output_prefix):
 def get_transcriptions():
     list_local_json = sorted(glob.glob(path.join(JSON_DIR, f"*.{JSON_EXT}")))
 
+    list_txts = []
+
     for f_name in list_local_json:
         only_name = f_name.split("/")[-1]
 
-        # build a nicer name, remove PREFIX and .json
-        # OCI speech add this PREFIX, we remove it
-        PREFIX = NAMESPACE + "_" + INPUT_BUCKET + "_"
-        only_name = only_name.replace(PREFIX, "")
-        only_name = only_name.replace(f".{JSON_EXT}", "")
-
-        print(f"Audio file: {only_name}")
         with open(f_name) as f:
-            d = json.load(f)
-            # print only the transcription
-            txt = d["transcriptions"][0]["transcription"]
+            d_json = json.load(f)
+            # get only the transcription text
+            txt = d_json["transcriptions"][0]["transcription"]
+            list_txts.append(txt)
 
-    return txt
+    return list_txts
 
 
 #
@@ -199,7 +137,9 @@ with st.sidebar.form("input_form"):
         url = st.text_input("URL (video works fine)")
     elif input_type == "File":
         # for now only wav supported
-        input_file = st.file_uploader("File", type=audio_supported)
+        input_files = st.file_uploader(
+            "File", type=audio_supported, accept_multiple_files=True
+        )
 
     language = st.selectbox("Language", options=LANG_SUPPORTED, index=0)
     LANGUAGE_CODE = dict_lang_codes[language]
@@ -207,21 +147,23 @@ with st.sidebar.form("input_form"):
     transcribe = st.form_submit_button(label="Transcribe")
 
 if transcribe:
-    transcription_col, media_col = st.columns(gap="large", spec=[1, 1])
+    transcription_col, media_col = st.columns(gap="large", spec=[2, 1])
 
-    if input_file:
+    if len(input_files):
         with st.spinner("Transcription in progress..."):
             t_start = time.time()
 
             # clean the local dir before upload
-            clean_appo_local()
+            clean_directory(LOCAL_DIR, EXT)
 
-            audio_path = path.join(LOCAL_DIR, input_file.name)
+            # copy the list of files to LOCAL_DIR
+            for v_file in input_files:
+                audio_path = path.join(LOCAL_DIR, v_file.name)
 
-            with open(audio_path, "wb") as f:
-                f.write(input_file.read())
+                with open(audio_path, "wb") as f:
+                    f.write(v_file.read())
 
-            # copy file to Object Storage
+            # copy all files from LOCAL_DIR to Object Storage
             fs = get_ocifs()
             FILE_NAMES = copy_wav_to_oss(fs)
 
@@ -229,6 +171,7 @@ if transcribe:
             JOB_PREFIX = "test_ui"
             DISPLAY_NAME = JOB_PREFIX
 
+            # we assume api key here... TODO: generalize to RP
             ai_client = oci.ai_speech.AIServiceSpeechClient(oci.config.from_file())
 
             # prepare the request
@@ -283,21 +226,25 @@ if transcribe:
             wait_for_job_completion(ai_client, JOB_ID)
 
             # prepare to copy json
-            clean_json_local_dir()
+            clean_directory(JSON_DIR, JSON_EXT)
 
             # get from JOB
             OUTPUT_PREFIX = transcription_job.data.output_location.prefix
 
             copy_json_from_oss(fs, OUTPUT_PREFIX)
 
-            txt = get_transcriptions()
+            # extract only txt from json
+            list_transcriptions = get_transcriptions()
 
-            print(txt)
-            transcription_col.subheader("The transcription:")
-            transcription_col.markdown(txt)
+            transcription_col.subheader("Audio transcriptions:")
+            for txt in list_transcriptions:
+                print(txt)
+                transcription_col.markdown(txt)
 
-            # add audio widget to enable to listen to audio
-            transcription_col.audio(data=input_file)
+            media_col.subheader("Audio:")
+            for v_file in input_files:
+                # add audio widget to enable to listen to audio
+                media_col.audio(data=v_file)
 
             t_ela = round(time.time() - t_start, 1)
 
