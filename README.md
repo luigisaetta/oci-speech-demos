@@ -60,3 +60,6 @@ In [utils](./utils.py):
 * tqdm
 
 The steps needed to create a dedicated conda environment are listed in the [Wiki page](https://github.com/luigisaetta/oci-speech-demos/wiki/Creating-a-conda-env).
+
+## Quotes
+The sentence that you see last in the picture is from the book "La misura del tempo", G. Carofiglio, p. 119 in the italian edition.
