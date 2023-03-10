@@ -40,12 +40,7 @@ def check_sample_rate(f_name, sample_rate):
     """
     vet, s_rate = sf.read(f_name)
 
-    v_rit = True
-
-    if s_rate != sample_rate:
-        v_rit = False
-
-    return v_rit
+    return s_rate == sample_rate
 
 
 parser = argparse.ArgumentParser()
