@@ -6,7 +6,7 @@ Using OCI Speech Service you can easily get accurate transcription of speech con
 You can take a set of audio files (for example, in wav format), upload these files to a bucket in the OCI Object Storage and
 get json files containing the transcriptions, in few minutes.
 
-In this repository you will find examples and demo showing how to use Python SDK to easily transcribe the audio files.
+In this repository you will find examples and demos showing how to use **OCI Python SDK** to easily transcribe the audio files.
 
 ## Languages Supported
 * English
@@ -23,10 +23,11 @@ OCI Speech support not only wav format, but also: mp3, ogg, oga, webm, ac3, aac,
 
 ## Demos:
 * [demo1](./demo1_main.py): takes a list of wav files from a local directory, transcribe the audio and output the result to the screen
-* [demo2](./demo2.py): built with Streamlit, enables you to upload a file to the UI and get back the audio trascription
+* [demo2](./demo2.py): built with Streamlit, enables you to upload a set of files to the UI and get back the audio trascriptions
 
 ## Sampling rate
-For all languages 16 Khz is supported. For some languages (english, spanish...) it is also supported 8 Khz.
+* For all languages 16 Khz is supported. 
+* For some languages (english, spanish...) it is also supported 8 Khz.
 
 ## Configuration
 To be able to use OCI Speech and the demos provided some configuration is needed.
@@ -38,8 +39,16 @@ For more details on the needed configuration, see the Wiki.
 In [demo1](./demo1_main.py) you can see: 
 * how to copy a set of wav files to Object Storage
 * how to **launch a transcription job**
-* how to **wait for job completion**
 * how to **extract the transcription** from the produced json files.
+
+In [demo2](./demo2.py) you can see:
+* how to create a UI for OCI Speech, using Streamlit
+* how to **launch a transcription job**
+* how to **extract the transcription** from the produced json files.
+
+In [utils](./utils.py):
+* how to **wait for job completion**
+* copy files to/from Object Storage
 
 ## Dependencies
 * oci
