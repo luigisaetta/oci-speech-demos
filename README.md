@@ -19,7 +19,7 @@ In this repository you will find examples and demos showing how to use **OCI Pyt
 * Portuguese
 
 ## Input format
-OCI Speech support not only wav format, but also: mp3, ogg, oga, webm, ac3, aac, mp4a, flac, amr.
+OCI Speech supports not only wav format, but also: mp3, ogg, oga, webm, ac3, aac, mp4a, flac, amr.
 
 ## Demos:
 * [demo1](./demo1_main.py): takes a list of wav files from a local directory, transcribe the audio and output the result to the screen
@@ -31,6 +31,7 @@ OCI Speech support not only wav format, but also: mp3, ogg, oga, webm, ac3, aac,
 
 ## Configuration
 To be able to use OCI Speech and the demos provided some configuration is needed.
+
 If you want to launch the demo from your laptop you need to have created the keys-pair, to be setup in $HOME/.oci directory
 
 For more details on the needed configuration, see the Wiki.
@@ -55,3 +56,5 @@ In [utils](./utils.py):
 * ocifs
 * Streamlit
 * tqdm
+
+The steps needed to create a dedicated conda environment are listed in the [Wiki page](https://github.com/luigisaetta/oci-speech-demos/wiki/Creating-a-conda-env).
