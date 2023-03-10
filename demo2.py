@@ -9,6 +9,8 @@ import time
 from tqdm import tqdm
 import glob
 import json
+from PIL import Image
+
 import oci
 
 from oci.ai_speech.models import (
@@ -121,6 +123,10 @@ st.set_page_config(
         "About": "This is a UI for OCI Speech Service.",
     },
 )
+
+# add a logo
+image = Image.open("oracle.png")
+img_widg = st.sidebar.image(image)
 
 input_type = st.sidebar.selectbox("Input Type", ["File"])
 
