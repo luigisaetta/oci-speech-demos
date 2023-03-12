@@ -56,10 +56,10 @@ def parser_add_args(parser):
         help="Job name and prefix",
     )
     parser.add_argument(
-        "--wav_dir",
+        "--audio_dir",
         type=str,
         required=False,
-        help="Input dir for wav",
+        help="Input dir for wav or flac files",
     )
     parser.add_argument(
         "--input_bucket",
@@ -160,20 +160,20 @@ OUTPUT_BUCKET = args.output_bucket
 # example "it-IT"
 LANGUAGE_CODE = args.language_code
 
-if args.wav_dir is not None:
+if args.audio_dir is not None:
     # get wav_dir from command line
-    WAV_DIR = args.wav_dir
+    AUDIO_DIR = args.audio_dir
 
 print("*** Starting JOB ***")
 print()
 
-# copy all wav files contained in DIR_WAV in INPUT_BUCKET
+# copy all files contained in DIR_WAV in INPUT_BUCKET
 #
 
 # This code try to get an instance of OCIFileSystem
 fs = get_ocifs()
 
-FILE_NAMES = copy_files_to_oss(fs, WAV_DIR, EXT, INPUT_BUCKET)
+FILE_NAMES = copy_files_to_oss(fs, AUDIO_DIR, INPUT_BUCKET)
 
 #
 # Launch the job

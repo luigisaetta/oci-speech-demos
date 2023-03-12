@@ -13,8 +13,6 @@ from config import (
     EXT,
     JSON_EXT,
     WAV_DIR,
-    JSON_DIR,
-    DEBUG,
 )
 
 

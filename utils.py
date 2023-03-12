@@ -73,13 +73,13 @@ def copy_files_to_oss(fs, local_dir, dest_bucket, ext="*"):
     """
     n_copied = 0
 
-    list_wav = glob.glob(path.join(local_dir, f"*.{ext}"))
+    list_files = glob.glob(path.join(local_dir, f"*.{ext}"))
 
     print()
     print("*** Copy audio files to transcribe ***")
 
     file_names = []
-    for f_name in tqdm(list_wav):
+    for f_name in tqdm(list_files):
         print(f"Copying {f_name}...")
 
         only_name = f_name.split("/")[-1]
