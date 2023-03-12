@@ -29,7 +29,7 @@ def check_sample_rate(f_name, sample_rate):
 
 
 # to clean appo local and json dir
-def clean_directory(dir, file_ext):
+def clean_directory(dir, file_ext="*"):
     # remove all files with ext in dir
     files = glob.glob(path.join(dir, f"*.{file_ext}"))
 
@@ -63,8 +63,8 @@ def get_ocifs():
     return fs
 
 
-# to copy wav files to oss
-def copy_files_to_oss(fs, local_dir, ext, dest_bucket):
+# to copy files to oss
+def copy_files_to_oss(fs, local_dir, dest_bucket, ext="*"):
     """
     copy all the files
     from local_dir

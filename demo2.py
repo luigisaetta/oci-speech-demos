@@ -6,7 +6,6 @@ import streamlit as st
 import os
 from os import path
 import time
-from tqdm import tqdm
 import glob
 import json
 from PIL import Image
@@ -23,8 +22,6 @@ from oci.ai_speech.models import (
 
 from utils import (
     clean_directory,
-    print_debug,
-    is_rp_ok,
     get_ocifs,
     copy_files_to_oss,
     copy_json_from_oss,
@@ -152,7 +149,7 @@ if transcribe:
             t_start = time.time()
 
             # clean the local dir before upload
-            clean_directory(LOCAL_DIR, EXT)
+            clean_directory(LOCAL_DIR)
 
             # copy the list of files to LOCAL_DIR
             for v_file in input_files:
@@ -163,7 +160,7 @@ if transcribe:
 
             # copy all files from LOCAL_DIR to Object Storage
             fs = get_ocifs()
-            FILE_NAMES = copy_files_to_oss(fs, LOCAL_DIR, EXT, INPUT_BUCKET)
+            FILE_NAMES = copy_files_to_oss(fs, LOCAL_DIR, INPUT_BUCKET)
 
             # transcribe JOB
             JOB_PREFIX = "test_ui"
