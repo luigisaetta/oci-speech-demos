@@ -22,4 +22,5 @@ WAV_DIR = "wav"
 # local directory for JSON output from OCI Speech
 JSON_DIR = "json"
 
+SAMPLE_RATE = 16000
 AUDIO_FORMAT_SUPPORTED = ["wav", "flac"]

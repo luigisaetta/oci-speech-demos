@@ -21,7 +21,9 @@ from oci.ai_speech.models import (
 )
 
 from utils import (
+    print_debug,
     clean_directory,
+    check_sample_rate,
     get_ocifs,
     copy_files_to_oss,
     copy_json_from_oss,
@@ -36,7 +38,7 @@ from config import (
     EXT,
     JSON_EXT,
     JSON_DIR,
-    DEBUG,
+    SAMPLE_RATE,
     AUDIO_FORMAT_SUPPORTED,
 )
 
@@ -46,7 +48,7 @@ OUTPUT_BUCKET = "speech_output"
 
 # list of supported audio files
 audio_supported = AUDIO_FORMAT_SUPPORTED
-LANG_SUPPORTED = ["it", "en"]
+LANG_SUPPORTED = ["en", "it"]
 dict_lang_codes = {"it": "it-IT", "en": "en-GB"}
 
 # end config
@@ -158,9 +160,14 @@ if transcribe:
                 with open(audio_path, "wb") as f:
                     f.write(v_file.read())
 
+                # added check of the sample rate
+                assert check_sample_rate(audio_path, SAMPLE_RATE)
+
             # copy all files from LOCAL_DIR to Object Storage
             fs = get_ocifs()
             FILE_NAMES = copy_files_to_oss(fs, LOCAL_DIR, INPUT_BUCKET)
+
+            print_debug(FILE_NAMES)
 
             # transcribe JOB
             JOB_PREFIX = "test_ui"
