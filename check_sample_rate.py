@@ -4,7 +4,8 @@
 import argparse
 from os import path
 import glob
-import soundfile as sf
+
+from utils import check_sample_rate
 
 from config import (
     COMPARTMENT_ID,
@@ -34,15 +35,6 @@ def parser_add_args(parser):
     return parser
 
 
-def check_sample_rate(f_name, sample_rate):
-    """
-    return true if the sample_rate is the expected
-    """
-    vet, s_rate = sf.read(f_name)
-
-    return s_rate == sample_rate
-
-
 parser = argparse.ArgumentParser()
 parser = parser_add_args(parser)
 args = parser.parse_args()
@@ -51,6 +43,7 @@ WAV_DIR = args.wav_dir
 SAMPLE_RATE = int(args.sample_rate)
 
 print()
+print("Checking the sampling rate of audio files..")
 print(f"Expected sample_rate is: {SAMPLE_RATE}")
 print()
 

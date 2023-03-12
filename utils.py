@@ -3,6 +3,7 @@ from os import path
 import glob
 import time
 from tqdm import tqdm
+import soundfile as sf
 
 import oci
 from ocifs import OCIFileSystem
@@ -16,6 +17,15 @@ def print_debug(txt=None):
             print(txt)
         else:
             print("")
+
+
+def check_sample_rate(f_name, sample_rate):
+    """
+    return true if the sample_rate is the expected
+    """
+    vet, s_rate = sf.read(f_name)
+
+    return s_rate == sample_rate
 
 
 # to clean appo local and json dir
