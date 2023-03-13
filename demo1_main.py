@@ -4,6 +4,7 @@
 # can be launched from your laptop, using api keys
 #
 import argparse
+import sys
 import os
 from os import path
 import time
@@ -42,6 +43,9 @@ from config import (
     JSON_DIR,
     DEBUG,
 )
+
+# to check the param for the lang_code
+DICT_LANG_CODES = {"it": "it-IT", "en": "en-GB", "es": "es-ES", "fr": "fr-FR"}
 
 # end global config
 
@@ -92,6 +96,18 @@ def print_args(args):
     print(f"OUTPUT_BUCKET: {args.output_bucket}")
     print(f"LANGUAGE_CODE: {args.language_code}")
     print()
+
+
+def check_lang_code(code):
+    # check it is in dict_lang_codes
+    found = False
+
+    for key, value in DICT_LANG_CODES.items():
+        if code == value:
+            found = True
+            break
+
+    return found
 
 
 def create_transcription_job_details():
@@ -158,8 +174,20 @@ JOB_PREFIX = args.job_prefix
 DISPLAY_NAME = JOB_PREFIX
 INPUT_BUCKET = args.input_bucket
 OUTPUT_BUCKET = args.output_bucket
-# example "it-IT"
-LANGUAGE_CODE = args.language_code
+
+
+# check that LANGUAGE_CODE is correct
+if check_lang_code(args.language_code):
+    # example "it-IT"
+    LANGUAGE_CODE = args.language_code
+else:
+    print("Invalid LANGUAGE_CODE, valid values are:")
+
+    for key, value in DICT_LANG_CODES.items():
+        print(value)
+    print()
+
+    sys.exit(-1)
 
 if args.audio_dir is not None:
     # get wav_dir from command line

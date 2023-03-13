@@ -50,7 +50,7 @@ OUTPUT_BUCKET = "speech_output"
 # list of supported audio files
 audio_supported = AUDIO_FORMAT_SUPPORTED
 LANG_SUPPORTED = ["en", "it"]
-dict_lang_codes = {"it": "it-IT", "en": "en-GB"}
+dict_lang_codes = {"it": "it-IT", "en": "en-GB", "es": "es-ES", "fr": "fr-FR"}
 
 # end config
 
