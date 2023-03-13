@@ -11,6 +11,7 @@ get json files containing the transcriptions, in few minutes.
 In this repository you will find examples and demos showing how to use **OCI Python SDK** to easily transcribe the audio files.
 
 ## Languages Supported
+OCI Speech support the following languages:
 * English
 * US English
 * Spanish
@@ -20,7 +21,7 @@ In this repository you will find examples and demos showing how to use **OCI Pyt
 * Hindi
 * Portuguese
 
-Demos have been tested using: English, Italian languages.
+Demos in this repository have been tested using: English, Italian languages.
 
 ## Input format
 OCI Speech supports not only **wav** format, but also: **mp3, ogg, oga, webm, ac3, aac, mp4a, flac, amr**.
