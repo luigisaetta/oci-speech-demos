@@ -47,8 +47,10 @@ In [demo2](./demo2.py) you can see how-to:
 * **launch a transcription job**
 * **extract the transcription** from the produced json files.
 
+In [SpeechClient](./speech_client.py):
+* how-to wait for the job to complete
+
 In [utils](./utils.py):
-* how to **wait for job completion**
 * check audio file sampling rate
 * clean a remote bucket
 * copy files to/from Object Storage
