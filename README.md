@@ -20,7 +20,7 @@ In this repository you will find examples and demos showing how to use **OCI Pyt
 * Hindi
 * Portuguese
 
-Demos have been tested using: english, italian languages.
+Demos have been tested using: English, Italian languages.
 
 ## Input format
 OCI Speech supports not only **wav** format, but also: **mp3, ogg, oga, webm, ac3, aac, mp4a, flac, amr**.
@@ -28,14 +28,17 @@ OCI Speech supports not only **wav** format, but also: **mp3, ogg, oga, webm, ac
 Demos in this repository have been tested using **wav, flac** format. 
 
 ## Demos:
-* [demo1](./demo1_main.py): command line demo, takes a list of wav files from a local directory, transcribe the audio and output the result to the screen
+* [demo1](./demo1_main.py): command line demo, takes a list of wav/flac files from a local directory, transcribe the audio and output the result to the screen and csv
 * [demo2](./demo2.py): a UI, built with Streamlit, enables you to upload a set of audio files and get back the trascriptions; Supports wav and flac formats.
+
+I have provided shell file (.sh) to show how to correctly launch the demos.
 
 ## Demo Features
 In [demo1](./demo1_main.py) you can see: 
 * how to copy a set of wav files to Object Storage
 * how to **launch an OCI Speech transcription job**
 * how to **extract the transcription** from the produced json files.
+* save transcriptions to csv
 
 In [demo2](./demo2.py) you can see:
 * how to create a UI for OCI Speech, using [Streamlit](https://streamlit.io/)
@@ -44,6 +47,7 @@ In [demo2](./demo2.py) you can see:
 
 In [utils](./utils.py):
 * how to **wait for job completion**
+* check audio file sampling rate
 * clean a remote bucket
 * copy files to/from Object Storage
 
@@ -66,6 +70,7 @@ For more details on the needed configuration, see the Wiki.
 * Streamlit
 * soundfile
 * tqdm
+* Pandas
 
 The steps needed to create a dedicated conda environment are listed in the [Wiki page](https://github.com/luigisaetta/oci-speech-demos/wiki/Creating-a-conda-env).
 
