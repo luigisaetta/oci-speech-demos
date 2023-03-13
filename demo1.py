@@ -16,23 +16,16 @@ import pandas as pd
 import oci
 from ocifs import OCIFileSystem
 
-from oci.ai_speech.models import (
-    TranscriptionModelDetails,
-    ObjectLocation,
-    ObjectListInlineInputLocation,
-    OutputLocation,
-    CreateTranscriptionJobDetails,
-)
+# the class incapsulate the Speech API, to simplify
+from speech_client import SpeechClient
 
 from utils import (
-    print_debug,
     check_lang_code,
     clean_directory,
     clean_bucket,
     get_ocifs,
     copy_files_to_oss,
     copy_json_from_oss,
-    wait_for_job_completion,
 )
 
 #
@@ -108,36 +101,6 @@ def print_args(args):
     print(f"OUTPUT_BUCKET: {args.output_bucket}")
     print(f"LANGUAGE_CODE: {args.language_code}")
     print()
-
-
-def create_transcription_job_details():
-    # prepare the request
-    MODE_DETAILS = TranscriptionModelDetails(
-        domain="GENERIC", language_code=LANGUAGE_CODE
-    )
-    OBJECT_LOCATION = ObjectLocation(
-        namespace_name=NAMESPACE,
-        bucket_name=INPUT_BUCKET,
-        object_names=FILE_NAMES,
-    )
-    INPUT_LOCATION = ObjectListInlineInputLocation(
-        location_type="OBJECT_LIST_INLINE_INPUT_LOCATION",
-        object_locations=[OBJECT_LOCATION],
-    )
-    OUTPUT_LOCATION = OutputLocation(
-        namespace_name=NAMESPACE, bucket_name=OUTPUT_BUCKET, prefix=JOB_PREFIX
-    )
-
-    transcription_job_details = CreateTranscriptionJobDetails(
-        display_name=DISPLAY_NAME,
-        compartment_id=COMPARTMENT_ID,
-        description="",
-        model_details=MODE_DETAILS,
-        input_location=INPUT_LOCATION,
-        output_location=OUTPUT_LOCATION,
-    )
-
-    return transcription_job_details
 
 
 def visualize_transcriptions():
@@ -247,11 +210,18 @@ FILE_NAMES = copy_files_to_oss(fs, AUDIO_DIR, INPUT_BUCKET)
 # Launch the job
 #
 
-# create the client
-ai_client = oci.ai_speech.AIServiceSpeechClient(oci.config.from_file())
+# the class that incapsulate OCI Speech API
+speech_client = SpeechClient()
 
 # prepare the request
-transcription_job_details = create_transcription_job_details()
+transcription_job_details = speech_client.create_transcription_job_details(
+    INPUT_BUCKET,
+    OUTPUT_BUCKET,
+    FILE_NAMES,
+    JOB_PREFIX,
+    DISPLAY_NAME,
+    LANGUAGE_CODE,
+)
 
 # create and launch the transcription job
 transcription_job = None
@@ -259,9 +229,10 @@ print("*** Create transcription JOB ***")
 t_start = time.time()
 
 try:
-    transcription_job = ai_client.create_transcription_job(
-        create_transcription_job_details=transcription_job_details
+    transcription_job = speech_client.create_transcription_job(
+        transcription_job_details
     )
+
     # get the job id for later
     JOB_ID = transcription_job.data.id
 
@@ -271,7 +242,7 @@ except Exception as e:
     print(e)
 
 # WAIT while JOB is in progress
-final_status = wait_for_job_completion(ai_client, JOB_ID)
+final_status = speech_client.wait_for_job_completion(JOB_ID)
 
 t_ela = time.time() - t_start
 

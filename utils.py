@@ -126,32 +126,6 @@ def clean_bucket(fs, bucket_name):
         fs.rm(f_name)
 
 
-# loop until the job status is completed
-def wait_for_job_completion(ai_client, job_id):
-    """
-    wait for the transcription job to complete
-    and return the final status
-    """
-    status = "ACCEPTED"
-
-    # here we start a loop until the job completes
-    i = 1
-    while status in ["ACCEPTED", "IN_PROGRESS"]:
-        print(f"Waiting for job to complete, elapsed: {i*SLEEP_TIME} s....")
-        time.sleep(SLEEP_TIME)
-
-        current_job = ai_client.get_transcription_job(job_id)
-        status = current_job.data.lifecycle_state
-        i += 1
-
-    # final status
-    print()
-    print(f"JOB final status is: {status}")
-    print()
-
-    return status
-
-
 # to check the lang code
 def check_lang_code(code, dict_lang_codes):
     # check it is in dict_lang_codes
