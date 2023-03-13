@@ -23,6 +23,7 @@ from oci.ai_speech.models import (
 from utils import (
     print_debug,
     clean_directory,
+    clean_bucket,
     get_ocifs,
     copy_files_to_oss,
     copy_json_from_oss,
@@ -173,6 +174,10 @@ print()
 # This code try to get an instance of OCIFileSystem
 fs = get_ocifs()
 
+# first: clean bucket destination
+clean_bucket(fs, INPUT_BUCKET)
+
+# copy files to process to input bucket
 FILE_NAMES = copy_files_to_oss(fs, AUDIO_DIR, INPUT_BUCKET)
 
 #
@@ -203,26 +208,34 @@ except Exception as e:
     print(e)
 
 # WAIT while JOB is in progress
-wait_for_job_completion(ai_client, JOB_ID)
+final_status = wait_for_job_completion(ai_client, JOB_ID)
 
 t_ela = time.time() - t_start
-print(f"JOB execution time: {round(t_ela, 1)} sec.")
-print()
 
 #
 # Download the output from JSON files
 #
 # clean local dir
-clean_directory(JSON_DIR, JSON_EXT)
+if final_status == "SUCCEEDED":
+    clean_directory(JSON_DIR, JSON_EXT)
 
-# get from JOB
-OUTPUT_PREFIX = transcription_job.data.output_location.prefix
+    # get from JOB
+    OUTPUT_PREFIX = transcription_job.data.output_location.prefix
 
-copy_json_from_oss(fs, JSON_DIR, JSON_EXT, OUTPUT_PREFIX, OUTPUT_BUCKET)
+    copy_json_from_oss(fs, JSON_DIR, JSON_EXT, OUTPUT_PREFIX, OUTPUT_BUCKET)
 
-# visualizing all the transcriptions
-# get the file list
-print()
-print("*** Visualizing transcriptions ***")
-print()
-visualize_transcriptions()
+    # visualizing all the transcriptions
+    # get the file list
+    print()
+    print("*** Visualizing transcriptions ***")
+    print()
+    visualize_transcriptions()
+
+    print()
+    print(f"Processed {len(FILE_NAMES)} files...")
+    print(f"Total execution time: {round(t_ela, 1)} sec.")
+    print()
+else:
+    print()
+    print("Error in JOB execution, failed!")
+    print()

@@ -23,6 +23,7 @@ from oci.ai_speech.models import (
 from utils import (
     print_debug,
     clean_directory,
+    clean_bucket,
     check_sample_rate,
     get_ocifs,
     copy_files_to_oss,
@@ -153,6 +154,10 @@ if transcribe:
             # clean the local dir before upload
             clean_directory(LOCAL_DIR)
 
+            # clean remote bucket
+            fs = get_ocifs()
+            clean_bucket(fs, INPUT_BUCKET)
+
             # copy the list of files to LOCAL_DIR
             for v_file in input_files:
                 audio_path = path.join(LOCAL_DIR, v_file.name)
@@ -164,7 +169,6 @@ if transcribe:
                 assert check_sample_rate(audio_path, SAMPLE_RATE)
 
             # copy all files from LOCAL_DIR to Object Storage
-            fs = get_ocifs()
             FILE_NAMES = copy_files_to_oss(fs, LOCAL_DIR, INPUT_BUCKET)
 
             print_debug(FILE_NAMES)

@@ -104,19 +104,38 @@ def copy_json_from_oss(fs, local_json_dir, json_ext, output_prefix, output_bucke
     print(f"Copy JSON result files to: {local_json_dir} local directory...")
     print()
 
+    file_names = []
     for f_name in tqdm(list_json):
         only_name = f_name.split("/")[-1]
+
         fs.get(f_name, path.join(local_json_dir, only_name))
+        file_names.append(only_name)
+
+    return file_names
+
+
+# to clean input bucket
+def clean_bucket(fs, bucket_name):
+    # get the list, iterate and delete
+    list_files = fs.ls(f"{bucket_name}@{NAMESPACE}/")
+
+    for f_name in list_files:
+        print(f"Deleting: {f_name}")
+        fs.rm(f_name)
 
 
 # loop until the job status is completed
 def wait_for_job_completion(ai_client, job_id):
+    """
+    wait for the transcription job to complete
+    and return the final status
+    """
     status = "ACCEPTED"
 
     # here we start a loop until the job completes
     i = 1
     while status in ["ACCEPTED", "IN_PROGRESS"]:
-        print(f"{i} Waiting for job to complete...")
+        print(f"Waiting for job to complete, elapsed: {i*SLEEP_TIME} s....")
         time.sleep(SLEEP_TIME)
 
         current_job = ai_client.get_transcription_job(job_id)
@@ -127,3 +146,5 @@ def wait_for_job_completion(ai_client, job_id):
     print()
     print(f"JOB final status is: {status}")
     print()
+
+    return status
