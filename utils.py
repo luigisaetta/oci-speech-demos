@@ -19,8 +19,9 @@ def print_debug(txt=None):
             print("")
 
 
-def check_sample_rate(f_name, sample_rate):
+def check_sample_rate(f_name, sample_rate=16000):
     """
+    sample_rate: the expected sampling rate
     return true if the sample_rate is the expected
     """
     vet, s_rate = sf.read(f_name)
