@@ -7,6 +7,7 @@ import argparse
 import sys
 import os
 from os import path
+from os.path import basename
 import time
 import glob
 import json
@@ -143,7 +144,7 @@ def visualize_transcriptions():
     list_local_json = sorted(glob.glob(path.join(JSON_DIR, f"*.{JSON_EXT}")))
 
     for f_name in list_local_json:
-        only_name = f_name.split("/")[-1]
+        only_name = basename(f_name)
 
         # build a nicer name, remove PREFIX and .json
         # OCI speech add this PREFIX, we remove it
@@ -166,7 +167,7 @@ def save_csv():
     list_txts = []
 
     for f_name in list_local_json:
-        only_name = f_name.split("/")[-1]
+        only_name = basename(f_name)
 
         # build a nicer name, remove PREFIX and .json
         # OCI speech add this PREFIX, we remove it

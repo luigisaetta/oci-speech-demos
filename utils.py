@@ -1,5 +1,6 @@
 import os
 from os import path
+from os.path import basename
 import glob
 import time
 from tqdm import tqdm
@@ -83,7 +84,7 @@ def copy_files_to_oss(fs, local_dir, dest_bucket, ext="*"):
     for f_name in tqdm(list_files):
         print(f"Copying {f_name}...")
 
-        only_name = f_name.split("/")[-1]
+        only_name = basename(f_name)
 
         fs.put(f_name, f"{dest_bucket}@{NAMESPACE}/{only_name}")
         file_names.append(only_name)
@@ -107,7 +108,7 @@ def copy_json_from_oss(fs, local_json_dir, json_ext, output_prefix, output_bucke
 
     file_names = []
     for f_name in tqdm(list_json):
-        only_name = f_name.split("/")[-1]
+        only_name = basename(f_name)
 
         fs.get(f_name, path.join(local_json_dir, only_name))
         file_names.append(only_name)

@@ -5,6 +5,7 @@
 import streamlit as st
 import os
 from os import path
+from os.path import basename
 import time
 import glob
 import json
@@ -97,7 +98,8 @@ def get_transcriptions():
     list_txts = []
 
     for f_name in list_local_json:
-        only_name = f_name.split("/")[-1]
+        # with basename should be os independent
+        only_name = basename(f_name)
 
         with open(f_name) as f:
             d_json = json.load(f)
@@ -170,8 +172,6 @@ if transcribe:
 
             # copy all files from LOCAL_DIR to Object Storage
             FILE_NAMES = copy_files_to_oss(fs, LOCAL_DIR, INPUT_BUCKET)
-
-            print_debug(FILE_NAMES)
 
             # transcribe JOB
             JOB_PREFIX = "test_ui"
