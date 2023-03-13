@@ -24,3 +24,6 @@ JSON_DIR = "json"
 
 SAMPLE_RATE = 16000
 AUDIO_FORMAT_SUPPORTED = ["wav", "flac"]
+
+# to save to csv
+CSV_NAME = "result.csv"

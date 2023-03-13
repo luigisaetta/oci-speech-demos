@@ -10,6 +10,8 @@ from os import path
 import time
 import glob
 import json
+import pandas as pd
+
 import oci
 from ocifs import OCIFileSystem
 
@@ -23,6 +25,7 @@ from oci.ai_speech.models import (
 
 from utils import (
     print_debug,
+    check_lang_code,
     clean_directory,
     clean_bucket,
     get_ocifs,
@@ -42,6 +45,7 @@ from config import (
     WAV_DIR,
     JSON_DIR,
     DEBUG,
+    CSV_NAME,
 )
 
 # to check the param for the lang_code
@@ -84,6 +88,13 @@ def parser_add_args(parser):
         required=True,
         help="Language code (ex: it-IT)",
     )
+    parser.add_argument(
+        "--save_csv",
+        type=str,
+        required=False,
+        choices={"yes", "no"},
+        help="If yes, create csv with output",
+    )
 
     return parser
 
@@ -96,18 +107,6 @@ def print_args(args):
     print(f"OUTPUT_BUCKET: {args.output_bucket}")
     print(f"LANGUAGE_CODE: {args.language_code}")
     print()
-
-
-def check_lang_code(code):
-    # check it is in dict_lang_codes
-    found = False
-
-    for key, value in DICT_LANG_CODES.items():
-        if code == value:
-            found = True
-            break
-
-    return found
 
 
 def create_transcription_job_details():
@@ -160,6 +159,36 @@ def visualize_transcriptions():
             print()
 
 
+def save_csv():
+    list_local_json = sorted(glob.glob(path.join(JSON_DIR, f"*.{JSON_EXT}")))
+
+    file_names = []
+    list_txts = []
+
+    for f_name in list_local_json:
+        only_name = f_name.split("/")[-1]
+
+        # build a nicer name, remove PREFIX and .json
+        # OCI speech add this PREFIX, we remove it
+        PREFIX = NAMESPACE + "_" + INPUT_BUCKET + "_"
+        only_name = only_name.replace(PREFIX, "")
+        only_name = only_name.replace(f".{JSON_EXT}", "")
+
+        file_names.append(only_name)
+        with open(f_name) as f:
+            d = json.load(f)
+            # print only the transcription
+            list_txts.append(d["transcriptions"][0]["transcription"])
+
+    # create a pandas DataFrame for easy save to csv
+    dict_result = {"file_name": file_names, "txt": list_txts}
+
+    df_result = pd.DataFrame(dict_result)
+
+    # save csv
+    df_result.to_csv(CSV_NAME, index=None)
+
+
 #
 # Main
 #
@@ -177,7 +206,7 @@ OUTPUT_BUCKET = args.output_bucket
 
 
 # check that LANGUAGE_CODE is correct
-if check_lang_code(args.language_code):
+if check_lang_code(args.language_code, DICT_LANG_CODES):
     # example "it-IT"
     LANGUAGE_CODE = args.language_code
 else:
@@ -187,11 +216,16 @@ else:
         print(value)
     print()
 
+    # EXIT
     sys.exit(-1)
 
 if args.audio_dir is not None:
     # get wav_dir from command line
     AUDIO_DIR = args.audio_dir
+
+if args.save_csv is not None:
+    if args.save_csv == "yes":
+        SAVE_CSV = True
 
 print("*** Starting JOB ***")
 print()
@@ -258,6 +292,10 @@ if final_status == "SUCCEEDED":
     print("*** Visualizing transcriptions ***")
     print()
     visualize_transcriptions()
+
+    if SAVE_CSV:
+        # save file_names, transcriptions in csv (result.csv)
+        save_csv()
 
     print()
     print(f"Processed {len(FILE_NAMES)} files...")

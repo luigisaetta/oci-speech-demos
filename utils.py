@@ -148,3 +148,16 @@ def wait_for_job_completion(ai_client, job_id):
     print()
 
     return status
+
+
+# to check the lang code
+def check_lang_code(code, dict_lang_codes):
+    # check it is in dict_lang_codes
+    found = False
+
+    for key, value in dict_lang_codes.items():
+        if code == value:
+            found = True
+            break
+
+    return found
