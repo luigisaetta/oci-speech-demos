@@ -35,7 +35,7 @@ Demos in this repository have been tested using **wav, flac** format.
 I have provided shell file (.sh) to show how to correctly launch the demos.
 
 ## Demo Features
-In [demo1](./demo1_main.py) you can see how-to: 
+In [demo1](./demo1.py) you can see how-to: 
 * copy a set of wav files to Object Storage
 * **launch an OCI Speech transcription job**
 * wait for the job to complete
