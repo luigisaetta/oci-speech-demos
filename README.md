@@ -35,16 +35,17 @@ Demos in this repository have been tested using **wav, flac** format.
 I have provided shell file (.sh) to show how to correctly launch the demos.
 
 ## Demo Features
-In [demo1](./demo1_main.py) you can see: 
-* how to copy a set of wav files to Object Storage
-* how to **launch an OCI Speech transcription job**
-* how to **extract the transcription** from the produced json files.
+In [demo1](./demo1_main.py) you can see how-to: 
+* copy a set of wav files to Object Storage
+* **launch an OCI Speech transcription job**
+* wait for the job to complete
+* **extract the transcription** from the produced json files.
 * save transcriptions to csv
 
-In [demo2](./demo2.py) you can see:
-* how to create a UI for OCI Speech, using [Streamlit](https://streamlit.io/)
-* how to **launch a transcription job**
-* how to **extract the transcription** from the produced json files.
+In [demo2](./demo2.py) you can see how-to:
+* create a UI for OCI Speech, using [Streamlit](https://streamlit.io/)
+* **launch a transcription job**
+* **extract the transcription** from the produced json files.
 
 In [utils](./utils.py):
 * how to **wait for job completion**
