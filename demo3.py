@@ -1,6 +1,7 @@
 #
 # To compute WER
 #
+import string
 import streamlit as st
 from os import path
 from os.path import basename
@@ -65,6 +66,29 @@ def get_txts(result_file, expected_file):
     return preds, expected
 
 
+#
+# This function must be customized
+# apply some normalization to transcriptions
+#
+# In the example expected text is all uppercase
+#
+def normalize(preds):
+    # make uppercase
+    preds = [txt.upper() for txt in preds]
+
+    # remove punctuation
+    preds = [txt.translate(str.maketrans("", "", string.punctuation)) for txt in preds]
+
+    return preds
+
+
+def build_result_df(preds, expected):
+    dict_res = {"Transcription": preds, "Expected": expected}
+    df_result = pd.DataFrame(dict_res)
+
+    return df_result
+
+
 # Set app wide config
 st.set_page_config(
     page_title="Compute WER | OCI Speech UI",
@@ -91,8 +115,6 @@ with st.sidebar.form("input_form"):
     compute = st.form_submit_button(label="Compute")
 
 if compute:
-    transcription_col, media_col = st.columns(gap="large", spec=[2, 1])
-
     # clean the local dir before upload
     clean_directory(LOCAL_DIR)
 
@@ -110,6 +132,9 @@ if compute:
 
         preds, expected = get_txts(result_csv.name, expected_csv.name)
 
+        # normalization: all preds uppercase
+        preds = normalize(preds)
+
         wer_score = wer.compute(predictions=preds, references=expected)
 
         print(f"WER score is: {round(wer_score, 2)}")
@@ -117,5 +142,7 @@ if compute:
 
         st.info(f"The computed WER score is: {round(wer_score, 2)}")
 
+        # display reults and expected
+        st.dataframe(build_result_df(preds, expected))
     else:
         st.error("The two files are not OK")
