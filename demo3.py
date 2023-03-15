@@ -54,6 +54,11 @@ def get_txts(result_file, expected_file):
     result_df = pd.read_csv(result_file)
     expected_df = pd.read_csv(expected_file)
 
+    # sort on the file name
+    result_df = result_df.sort_values("file_name", ascending=True)
+    expected_df = expected_df.sort_values("file_name", ascending=True)
+
+    # extract the transcriptions
     preds = list(result_df["txt"].values)
     expected = list(expected_df["txt"].values)
 
