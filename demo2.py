@@ -3,12 +3,12 @@
 # upload a set of wav/flac files using Streamlit and get transcription
 #
 import streamlit as st
-import os
 from os import path
 from os.path import basename
 import time
 import glob
 import json
+import pandas as pd
 from PIL import Image
 
 import oci
@@ -35,6 +35,7 @@ from config import (
     JSON_DIR,
     SAMPLE_RATE,
     AUDIO_FORMAT_SUPPORTED,
+    CSV_NAME,
 )
 
 LOCAL_DIR = "appo_local"
@@ -43,8 +44,16 @@ OUTPUT_BUCKET = "speech_output"
 
 # list of supported audio files
 audio_supported = AUDIO_FORMAT_SUPPORTED
-LANG_SUPPORTED = ["en", "it"]
-dict_lang_codes = {"it": "it-IT", "en": "en-GB", "es": "es-ES", "fr": "fr-FR"}
+
+# to translate in the lang codes expected by OCI Speech
+DICT_LANG_CODES = {
+    "en": "en-GB",
+    "it": "it-IT",
+    "es": "es-ES",
+    "fr": "fr-FR",
+    "de": "de-DE",
+}
+LANG_SUPPORTED = DICT_LANG_CODES.keys()
 
 # end config
 
@@ -71,6 +80,36 @@ def get_transcriptions():
             list_txts.append(txt)
 
     return list_txts
+
+
+def save_csv():
+    list_local_json = sorted(glob.glob(path.join(JSON_DIR, f"*.{JSON_EXT}")))
+
+    file_names = []
+    list_txts = []
+
+    for f_name in list_local_json:
+        only_name = basename(f_name)
+
+        # build a nicer name, remove PREFIX and .json
+        # OCI speech add this PREFIX, we remove it
+        PREFIX = NAMESPACE + "_" + INPUT_BUCKET + "_"
+        only_name = only_name.replace(PREFIX, "")
+        only_name = only_name.replace(f".{JSON_EXT}", "")
+
+        file_names.append(only_name)
+        with open(f_name) as f:
+            d = json.load(f)
+            # print only the transcription
+            list_txts.append(d["transcriptions"][0]["transcription"])
+
+    # create a pandas DataFrame for easy save to csv
+    dict_result = {"file_name": file_names, "txt": list_txts}
+
+    df_result = pd.DataFrame(dict_result)
+
+    # save csv
+    df_result.to_csv(CSV_NAME, index=None)
 
 
 #
@@ -105,7 +144,9 @@ with st.sidebar.form("input_form"):
         )
 
     language = st.selectbox("Language", options=LANG_SUPPORTED, index=0)
-    LANGUAGE_CODE = dict_lang_codes[language]
+    LANGUAGE_CODE = DICT_LANG_CODES[language]
+
+    do_csv = st.radio(label="Save to csv", horizontal=True, options=["no", "yes"])
 
     transcribe = st.form_submit_button(label="Transcribe")
 
@@ -130,8 +171,13 @@ if transcribe:
                 with open(audio_path, "wb") as f:
                     f.write(v_file.read())
 
-                # added check of the sample rate
-                assert check_sample_rate(audio_path, SAMPLE_RATE)
+            # first check sample rate is ok
+            with st.spinner("Checking sampling rate..."):
+                for v_file in input_files:
+                    # added check of the sample rate
+                    audio_path = path.join(LOCAL_DIR, v_file.name)
+                    assert check_sample_rate(audio_path, SAMPLE_RATE)
+                st.info("Sampling rate OK.")
 
             # copy all files from LOCAL_DIR to Object Storage
             FILE_NAMES = copy_files_to_oss(fs, LOCAL_DIR, INPUT_BUCKET)
@@ -153,7 +199,6 @@ if transcribe:
             )
 
             # create and launch the transcription job
-            transcription_job = None
             print("*** Create transcription JOB ***")
 
             try:
@@ -166,6 +211,8 @@ if transcribe:
 
                 print(f"JOB ID is: {transcription_job.data.id}")
                 print()
+
+                st.info(f"Launched transcription job: {JOB_ID}")
             except Exception as e:
                 print(e)
 
@@ -184,17 +231,23 @@ if transcribe:
             # extract only txt from json
             list_transcriptions = get_transcriptions()
 
+            # Visualize output:
             # visualize transcriptions and audio widget
             transcription_col.subheader("Audio transcriptions:")
+            media_col.subheader("Audio:")
+
             print()
             for txt in list_transcriptions:
                 print(txt)
                 transcription_col.markdown(txt)
 
-            media_col.subheader("Audio:")
+            # prepare audio widgets
             for v_file in input_files:
                 # add audio widget to enable to listen to audio
                 media_col.audio(data=v_file)
+
+            if do_csv == "yes":
+                save_csv()
 
             t_ela = round(time.time() - t_start, 1)
 

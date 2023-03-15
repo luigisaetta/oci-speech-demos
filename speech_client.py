@@ -23,8 +23,6 @@ from config import (
 
 
 class SpeechClient:
-    # to enable/disable debug printing
-
     ai_client = None
 
     def __init__(self):
