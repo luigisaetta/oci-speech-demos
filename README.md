@@ -91,5 +91,5 @@ The steps needed to create a dedicated conda environment are listed in the [Wiki
 The **sentence** that you see last in the picture is from the book "La misura del tempo", G. Carofiglio, p. 119 in the italian edition.
 
 ## References.
-This repositopry has been linked in the Oracle Technology Organization.
+This repository has been linked in the Oracle Technology Organization GitHub repo.
 See [here](https://github.com/oracle-devrel/technology-engineering/tree/main/app-dev/ai-cloud-services/ai-speech) 
