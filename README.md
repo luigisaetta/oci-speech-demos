@@ -1,7 +1,15 @@
 # OCI Speech Demos
 ![UI demo2](./ui_printscreen.png)
 
-This repository contains all the work done for demos on **Oracle OCI Speech Service**
+## Introduction.
+OCI Speech is an OCI AI service that applies automatic speech recognition technology to transform audio-based content into text. 
+Developers can easily make API calls to integrate OCI Speech’s pre-trained models into their applications. OCI Speech can be used for accurate, 
+text-normalized, time-stamped transcription via the console and REST APIs as well as command-line interfaces or SDKs. You can also use OCI 
+Speech in an OCI Data Science notebook session. With OCI Speech, you can filter profanities, get confidence scores for both single words 
+and complete transcriptions, and more. 
+
+## Contents.
+This repository contains all the work done for demos on **OCI Speech Service**
 
 Using OCI Speech Service you can easily get accurate transcription of speech contained in audio files.
 
@@ -81,3 +89,7 @@ The steps needed to create a dedicated conda environment are listed in the [Wiki
 
 ## Quotes
 The **sentence** that you see last in the picture is from the book "La misura del tempo", G. Carofiglio, p. 119 in the italian edition.
+
+## References.
+This repositopry has been linked in the Oracle Technology Organization.
+See [here](https://github.com/oracle-devrel/technology-engineering/tree/main/app-dev/ai-cloud-services/ai-speech) 
