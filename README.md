@@ -37,7 +37,7 @@ OCI Speech supports not only **wav** format, but also: **mp3, ogg, oga, webm, ac
 Demos in this repository have been tested using **wav, flac** format. 
 
 ## Demos:
-* [demo1](./demo1_main.py): command line demo, takes a list of wav/flac files from a local directory, transcribe the audio and output the result to the screen and csv
+* [demo1](./demo1.py): command line demo, takes a list of wav/flac files from a local directory, transcribe the audio and output the result to the screen and csv
 * [demo2](./demo2.py): a UI, built with Streamlit, enables you to upload a set of audio files and get back the trascriptions; Supports wav and flac formats.
 * [demo3](./demo3.py): Compute WER.
 
