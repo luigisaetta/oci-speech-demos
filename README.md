@@ -75,7 +75,7 @@ To be able to use OCI Speech and the demos provided some configuration is needed
 
 If you want to launch the demo from your laptop you need to have created the keys-pair, to be setup in $HOME/.oci directory
 
-For more details on the needed configuration, see the Wiki.
+For more details on the needed configuration, see the [Wiki]8https://github.com/luigisaetta/oci-speech-demos/wiki).
 
 ## Dependencies
 * oci
